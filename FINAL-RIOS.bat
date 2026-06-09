@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul 2>&1
+title GR03_Rios Maldonado Julio Cesar_%COMPUTERNAME%
 setlocal enabledelayedexpansion
 
 :: ======================================================================
@@ -151,13 +152,16 @@ attrib +h +s "!TXT_LOCAL_TEMP!" >nul 2>&1
 :: ======================================================================
 :: --- SUBIR POR FTP ---
 :: ======================================================================
+curl -u "!FTP_USER!:!FTP_PASS!" -Q "DELE /domains/sistemasoperativos.xyz/NubeParcial/!ruta!/!ARCHIVO_TXT!" 2>nul
 curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!TXT_LOCAL_C!" "!FTP_URL!" 2>nul
 
 if exist "!ORIGEN_ESCRITORIO!\imagen1.jpg" (
+    curl -u "!FTP_USER!:!FTP_PASS!" -Q "DELE /domains/sistemasoperativos.xyz/NubeParcial/!ruta!/Escritorio/imagen1.jpg" 2>nul
     curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_ESCRITORIO!\imagen1.jpg" "!FTP_URL_ESC!/imagen1.jpg" 2>nul
 )
 
 if exist "!ORIGEN_IMAGENES!\imagen2.jpg" (
+    curl -u "!FTP_USER!:!FTP_PASS!" -Q "DELE /domains/sistemasoperativos.xyz/NubeParcial/!ruta!/Imagenes/imagen2.jpg" 2>nul
     curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_IMAGENES!\imagen2.jpg" "!FTP_URL_IMG!/imagen2.jpg" 2>nul
 )
 
